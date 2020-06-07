@@ -1,0 +1,12 @@
+data/*
+backup
+imagenet
+unused
+*/__pycache__
+pdfs
+results
+snapshots
+*/*.pyc
+*.pyc
+main.py
+.localized
