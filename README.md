@@ -1,4 +1,4 @@
-# A PyTorch implementation for [Understanding and Exploring the Network with Stochastic Architectures](http://ml.cs.tsinghua.edu.cn/~zhijie/nsa/NSA_NIPS_camera_ready.pdf) (NeurIPS 2020)
+# A PyTorch implementation for [Understanding and Exploring the Network with Stochastic Architectures](http://ml.cs.tsinghua.edu.cn/~zhijie/nsa/NSA_NIPS_camera_ready.pdf), [Zhijie Deng](http://ml.cs.tsinghua.edu.cn/~zhijie/), [Yinpeng Dong](http://ml.cs.tsinghua.edu.cn/~yinpeng/), Shifeng Zhang, and [Jun Zhu](http://ml.cs.tsinghua.edu.cn/~jun/) (NeurIPS 2020)
 
 ## Usage
 ### Dependencies
