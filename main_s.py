@@ -43,7 +43,6 @@ parser.add_argument('--droppath_rate', type=float, default=0.)
 parser.add_argument('--learn_aggr', action='store_true', default=False)
 parser.add_argument('--aux', action='store_true', default=False)
 parser.add_argument('--aux_weight', type=float, default=0.)
-parser.add_argument('--label_smooth_rate', type=float, default=0.)
 
 # Checkpoints
 parser.add_argument('--save_path', type=str, default='/data/zhijie/snapshots_fbnn/', help='Folder to save checkpoints and log.')
@@ -67,7 +66,6 @@ parser.add_argument('--arch_type', default='random', type=str)
 parser.add_argument('--arch_seed_start', type=int, default=1)
 parser.add_argument('--arch_seed_end', type=int, default=5)
 parser.add_argument('--arch_p', type=float, default=0.7)
-parser.add_argument('--gradient_est', default=None, type=str)
 parser.add_argument('--arch_reg', type=float, default=1.)
 parser.add_argument('--batch_arch', action='store_true', default=False)
 
@@ -155,11 +153,7 @@ def main():
     num_classes, train_loader, test_loader = load_dataset()
 
     net = load_model(num_classes, log)
-    criterion = torch.nn.CrossEntropyLoss().cuda()
-    if args.label_smooth_rate > 0.:
-        criterion_train = LabelSmoothingLoss(num_classes, args.label_smooth_rate)
-    else:
-        criterion_train = criterion
+    criterion_train = torch.nn.CrossEntropyLoss().cuda()
     params = group_weight_decay(net, state['decay'])
     optimizer = torch.optim.SGD(params, state['learning_rate'], momentum=state['momentum'], nesterov=(state['momentum'] > 0.0))
 
@@ -251,22 +245,13 @@ def train(train_loader, model, criterion, optimizer, epoch, log):
         target = target.cuda(non_blocking=True)
 
         if args.aux:
-            if not args.gradient_est is None:
-                output, output_aux, arch_logits = model(input, True)
-            else:
-                output, output_aux = model(input)
+            output, output_aux = model(input)
         else:
-            if not args.gradient_est is None:
-                output, arch_logits = model(input, True)
-            else:
-                output = model(input)
+            output = model(input)
 
         loss = criterion(output, target)
         if args.aux:
             loss += args.aux_weight * criterion(output_aux, target)
-        if not args.gradient_est is None:
-            loss += args.arch_reg * (arch_logits.softmax(-1) * arch_logits.log_softmax(-1)).sum(1).mean(0)
-            arch_prob.append(arch_logits.softmax(-1).sum(0).data.cpu().numpy())
 
         optimizer.zero_grad()
         loss.backward()
@@ -453,23 +438,6 @@ def validate_ens(val_loader, model, criterion, log, num_archs):
     print(np.mean(loses), np.mean(accs))
     print((ens.max(1)[1] == targets).float().mean())
     np.save(args.save_path + "/ens_acc_list.npy", np.array(enss))
-
-class LabelSmoothingLoss(nn.Module):
-    def __init__(self, classes, smoothing=0.0, dim=-1):
-        super(LabelSmoothingLoss, self).__init__()
-        self.confidence = 1.0 - smoothing
-        self.smoothing = smoothing
-        self.cls = classes
-        self.dim = dim
-
-    def forward(self, pred, target):
-        pred = pred.log_softmax(dim=self.dim)
-        with torch.no_grad():
-            # true_dist = pred.data.clone()
-            true_dist = torch.zeros_like(pred)
-            true_dist.fill_(self.smoothing / (self.cls - 1))
-            true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
-        return torch.mean(torch.sum(-true_dist * pred, dim=self.dim))
 
 def print_log(print_string, log):
     print("{}".format(print_string))
