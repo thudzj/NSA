@@ -153,7 +153,7 @@ def main():
     num_classes, train_loader, test_loader = load_dataset()
 
     net = load_model(num_classes, log)
-    criterion_train = torch.nn.CrossEntropyLoss().cuda()
+    criterion = torch.nn.CrossEntropyLoss().cuda()
     params = group_weight_decay(net, state['decay'])
     optimizer = torch.optim.SGD(params, state['learning_rate'], momentum=state['momentum'], nesterov=(state['momentum'] > 0.0))
 
@@ -206,7 +206,7 @@ def main():
         print_log('\n==>>{:s} [Epoch={:03d}/{:03d}] {:s} [learning_rate={:6.4f}]'.format(time_string(), epoch, args.epochs, need_time, current_learning_rate) \
                     + ' [Best : Accuracy={:.2f}, Error={:.2f}]'.format(recorder.max_accuracy(False), 100-recorder.max_accuracy(False)), log)
 
-        train_acc, train_los = train(train_loader, net, criterion_train, optimizer, epoch, log)
+        train_acc, train_los = train(train_loader, net, criterion, optimizer, epoch, log)
 
         val_acc, val_los   = validate(test_loader, net, criterion, log, 1 if epoch < args.epochs -1 else args.num_ensemble)
         recorder.update(epoch, train_los, train_acc, val_los, val_acc)
